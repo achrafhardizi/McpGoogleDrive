@@ -6,9 +6,12 @@ import com.google.api.services.drive.model.File;
 import lombok.AllArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 @RestController
@@ -56,6 +59,26 @@ public class DriveController {
         try {
             File folder = driveService.createFolder(folderName);
             return ResponseEntity.ok(folder);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/files/{fileId}/pdf")
+    public ResponseEntity<byte[]> downloadFileAsPdf(@PathVariable String fileId) {
+        try {
+            ByteArrayOutputStream outputStream = driveService.exportPdf(fileId);
+            byte[] pdfBytes = outputStream.toByteArray();
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", fileId + ".pdf");
+            
+            return ResponseEntity
+                    .ok()
+                    .headers(headers)
+                    .body(pdfBytes);
         } catch (IOException e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
